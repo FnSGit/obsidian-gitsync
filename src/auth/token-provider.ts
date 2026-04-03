@@ -1,6 +1,8 @@
-import { App } from 'obsidian';
 import { AuthProvider, AuthCredentials } from './auth-provider';
 import { logger } from '../utils/logger';
+
+/** 最小 Token 长度 */
+const MIN_TOKEN_LENGTH = 20;
 
 /**
  * Token 认证提供者
@@ -10,10 +12,7 @@ export class TokenAuthProvider implements AuthProvider {
   readonly type = 'token' as const;
   private token: string;
 
-  constructor(
-    private app: App,
-    token: string = ''
-  ) {
+  constructor(token: string = '') {
     this.token = token;
   }
 
@@ -37,8 +36,8 @@ export class TokenAuthProvider implements AuthProvider {
       return false;
     }
 
-    // 基本格式检查（Gitee token 通常是 40 字符）
-    if (this.token.length < 20) {
+    // 基本格式检查
+    if (this.token.length < MIN_TOKEN_LENGTH) {
       logger.warn('Token format invalid');
       return false;
     }
