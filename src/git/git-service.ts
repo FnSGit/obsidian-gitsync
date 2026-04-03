@@ -1,4 +1,4 @@
-import { FileChange, SyncResult } from '../types';
+import { FileChange } from '../types';
 
 /**
  * Git 操作抽象接口
