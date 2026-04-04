@@ -9,7 +9,12 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
-  "keywords": ["obsidian", "git", "sync", "gitee"],
+  "keywords": [
+    "obsidian",
+    "git",
+    "sync",
+    "gitee"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -23,7 +28,8 @@
     "typescript": "^5.3.0"
   },
   "dependencies": {
+    "ignore": "^5.3.0",
     "isomorphic-git": "^1.25.0",
-    "ignore": "^5.3.0"
+    "tslib": "^2.8.1"
   }
 }

@@ -95,8 +95,7 @@ export class FileUtils {
    * 获取仓库根目录路径
    */
   getVaultRoot(): string {
-    return this.app.vault.adapter.getBasePath
-      ? this.app.vault.adapter.getBasePath()
-      : (this.app.vault.adapter as unknown as { basePath: string }).basePath;
+    const adapter = this.app.vault.adapter as unknown as { basePath?: string };
+    return adapter.basePath || '';
   }
 }

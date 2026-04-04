@@ -95,6 +95,21 @@ export class IsomorphicGitService implements GitService {
           throw new Error(`Not found: ${filePath}`);
         },
 
+        lstat: async (filePath: string) => {
+          const relativePath = path.relative(dir, filePath);
+          const normalized = normalizePath(relativePath);
+          const file = app.vault.getAbstractFileByPath(normalized);
+
+          if (file) {
+            return {
+              isFile: () => file instanceof TFile,
+              isDirectory: () => file instanceof TFolder,
+            };
+          }
+
+          throw new Error(`Not found: ${filePath}`);
+        },
+
         unlink: async (filePath: string) => {
           const relativePath = path.relative(dir, filePath);
           const normalized = normalizePath(relativePath);
@@ -201,13 +216,18 @@ export class IsomorphicGitService implements GitService {
 
       let fileStatus: FileStatus;
 
-      if (head === 0 && workdir === 2 && stage === 2) {
+      // 使用数字比较，因为 isomorphic-git 的状态码是数字
+      const headStatus = head as number;
+      const workdirStatus = workdir as number;
+      const stageStatus = stage as number;
+
+      if (headStatus === 0 && workdirStatus === 2 && stageStatus === 2) {
         fileStatus = 'added';
-      } else if (head === 1 && workdir === 0 && stage === 0) {
+      } else if (headStatus === 1 && workdirStatus === 0 && stageStatus === 0) {
         fileStatus = 'deleted';
-      } else if (head === 1 && workdir === 2 && stage === 2) {
+      } else if (headStatus === 1 && workdirStatus === 2 && stageStatus === 2) {
         fileStatus = 'modified';
-      } else if (head === 1 && workdir === 3 && stage === 3) {
+      } else if (headStatus === 1 && workdirStatus === 3 && stageStatus === 3) {
         fileStatus = 'conflicted';
       } else {
         continue;
@@ -329,6 +349,7 @@ interface FileSystemAdapter {
     mkdir(path: string): Promise<void>;
     readdir(path: string): Promise<string[]>;
     stat(path: string): Promise<{ isFile(): boolean; isDirectory(): boolean }>;
+    lstat(path: string): Promise<{ isFile(): boolean; isDirectory(): boolean }>;
     unlink(path: string): Promise<void>;
     rmdir(path: string): Promise<void>;
   };
