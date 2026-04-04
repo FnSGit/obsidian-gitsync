@@ -1,4 +1,4 @@
-import { App, Modal, Setting, TextAreaComponent } from 'obsidian';
+import { App, Modal, Setting } from 'obsidian';
 import { ConflictInfo } from '../types';
 import { ConflictHandler } from '../sync/conflict-handler';
 

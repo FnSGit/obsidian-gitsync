@@ -1,4 +1,4 @@
-import { App, MarkdownView } from 'obsidian';
+import { App } from 'obsidian';
 import { SyncStatus } from '../types';
 
 export class StatusBar {
@@ -74,7 +74,8 @@ export class StatusBar {
 
     // 点击触发同步
     this.element.onClickEvent(() => {
-      this.app.commands.executeCommandById('obsidian-git-sync:sync');
+      // @ts-ignore
+      this.app.commands?.executeCommandById?.('obsidian-git-sync:sync');
     });
   }
 

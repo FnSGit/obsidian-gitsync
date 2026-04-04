@@ -9,26 +9,20 @@ export class RibbonIcon {
 
   constructor(
     private app: App,
+    iconEl: HTMLElement,
     private onSync: SyncCallback,
     private onShowConflicts: ShowConflictsCallback
   ) {
-    this.iconEl = this.app.workspace.addRibbonIcon(
-      'git-branch',
-      'Git Sync',
-      (evt) => this.handleClick(evt)
-    );
+    this.iconEl = iconEl;
+    this.iconEl.addClass('git-sync-icon');
+    this.iconEl.addEventListener('click', (evt) => this.handleClick(evt as MouseEvent));
+    this.iconEl.addEventListener('contextmenu', (evt) => this.showMenu(evt as MouseEvent));
   }
 
   /**
    * 处理点击事件
    */
   private async handleClick(evt: MouseEvent): Promise<void> {
-    // 右键显示菜单
-    if (evt.button === 2) {
-      this.showMenu(evt);
-      return;
-    }
-
     // 左键触发同步
     await this.onSync();
   }

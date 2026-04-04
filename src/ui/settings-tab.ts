@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import GitSyncPlugin from '../index';
-import { logger } from '../utils/logger';
 
 export class GitSyncSettingTab extends PluginSettingTab {
   constructor(
@@ -41,8 +40,8 @@ export class GitSyncSettingTab extends PluginSettingTab {
         .addOption('token', '访问令牌 (HTTPS)')
         .addOption('ssh', 'SSH 密钥')
         .setValue(this.plugin.settings.authType)
-        .onChange(async (value: 'token' | 'ssh') => {
-          this.plugin.settings.authType = value;
+        .onChange(async (value) => {
+          this.plugin.settings.authType = value as 'token' | 'ssh';
           await this.plugin.saveSettings();
           this.display(); // 刷新界面
         }));
