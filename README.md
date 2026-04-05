@@ -136,6 +136,8 @@ obsidian-git-sync/
 ├── src/
 │   ├── index.ts              # 插件入口
 │   ├── types.ts              # 类型定义
+│   ├── manifest.json         # 插件元数据
+│   ├── styles.css            # 样式文件
 │   ├── auth/                 # 认证模块
 │   │   ├── auth-provider.ts  # 认证接口
 │   │   └── token-provider.ts # Token 认证实现
@@ -154,8 +156,9 @@ obsidian-git-sync/
 │   └── utils/                # 工具函数
 │       ├── logger.ts         # 日志工具
 │       └── file-utils.ts     # 文件工具
-├── styles.css                # 样式文件
-├── manifest.json             # 插件元数据
+├── scripts/                  # 构建脚本
+├── dist/                     # 构建输出
+├── release/                  # 发布包
 ├── package.json              # 项目配置
 └── tsconfig.json             # TypeScript 配置
 ```

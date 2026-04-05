@@ -23,12 +23,13 @@ function log(color, message) {
 
 function main() {
   const rootDir = path.join(__dirname, '..');
+  const srcDir = path.join(rootDir, 'src');
   const distDir = path.join(rootDir, 'dist');
 
   log('green', '=== Obsidian Git Sync 打包脚本 ===\n');
 
-  // 读取 manifest.json
-  const manifestPath = path.join(rootDir, 'manifest.json');
+  // 读取 manifest.json (从 src/ 目录)
+  const manifestPath = path.join(srcDir, 'manifest.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   const { version, id } = manifest;
   const packageName = `${id}-${version}`;
@@ -59,8 +60,8 @@ function main() {
   log('yellow', '检查必需文件...');
   const sourceFiles = [
     { src: 'dist/main.js', dest: 'main.js' },
-    { src: 'manifest.json', dest: 'manifest.json' },
-    { src: 'styles.css', dest: 'styles.css' }
+    { src: 'src/manifest.json', dest: 'manifest.json' },
+    { src: 'src/styles.css', dest: 'styles.css' }
   ];
   const missingFiles = [];
 

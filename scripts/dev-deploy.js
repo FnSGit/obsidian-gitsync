@@ -48,8 +48,8 @@ function main() {
 
   const files = [
     { src: 'dist/main.js', dest: 'main.js' },
-    { src: 'manifest.json', dest: 'manifest.json' },
-    { src: 'styles.css', dest: 'styles.css' }
+    { src: 'src/manifest.json', dest: 'manifest.json' },
+    { src: 'src/styles.css', dest: 'styles.css' }
   ];
 
   for (const file of files) {
