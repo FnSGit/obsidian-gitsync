@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "Sync your Obsidian vault with Git repository (Gitee, GitHub, etc.)",
-  "author": "User",
-  "authorUrl": "https://gitee.com",
+  "author": "FnSGit",
+  "authorUrl": "https://github.com/FnSGit",
   "isDesktopOnly": false
 }

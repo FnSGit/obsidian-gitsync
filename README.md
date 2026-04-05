@@ -1,6 +1,8 @@
 # Obsidian Git Sync
 
-一个用于 Obsidian 的 Git 同步插件，支持将 Obsidian 笔记库同步到 Gitee 等远程 Git 仓库，实现多端同步。
+[![GitHub](https://img.shields.io/badge/GitHub-FnSGit/obsidian--gitsync-blue)](https://github.com/FnSGit/obsidian-gitsync)
+
+一个用于 Obsidian 的 Git 同步插件，支持将 Obsidian 笔记库同步到 Gitee、GitHub 等远程 Git 仓库，实现多端同步。
 
 ## 功能特性
 
@@ -40,15 +42,15 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/obsidian-git-sync.git
-cd obsidian-git-sync
+git clone https://github.com/FnSGit/obsidian-gitsync.git
+cd obsidian-gitsync
 
 # 安装依赖并构建
 npm install
 npm run build
 
-# 复制到 Obsidian 插件目录
-cp -r release/obsidian-git-sync /path/to/your/vault/.obsidian/plugins/
+# 部署到 Obsidian 插件目录
+npm run deploy
 ```
 
 ## 快速开始
@@ -249,6 +251,7 @@ MIT License
 
 ---
 
-**作者**: User  
+**作者**: [FnSGit](https://github.com/FnSGit)  
+**仓库**: https://github.com/FnSGit/obsidian-gitsync  
 **版本**: 1.0.0  
 **Obsidian 最低版本**: 0.15.0
