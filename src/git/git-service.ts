@@ -80,6 +80,12 @@ export interface GitService {
    * 清理资源
    */
   dispose(): void;
+
+  /**
+   * 设置认证 Token（仅 isomorphic-git 需要）
+   * 原生 Git 使用系统 SSH 配置，不需要 Token
+   */
+  setToken?(token: string): void;
 }
 
 /**

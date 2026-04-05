@@ -6,6 +6,36 @@ import { FileChange, FileStatus } from '../types';
 import { logger } from '../utils/logger';
 
 /**
+ * 检测是否为 SSH URL 格式
+ */
+function isSSHUrl(url: string): boolean {
+  return url.startsWith('git@') || url.startsWith('ssh://');
+}
+
+/**
+ * 将 SSH URL 转换为 HTTPS URL
+ * git@gitee.com:user/repo.git -> https://gitee.com/user/repo.git
+ */
+function sshToHttps(url: string): string {
+  if (!isSSHUrl(url)) return url;
+
+  // git@gitee.com:user/repo.git
+  if (url.startsWith('git@')) {
+    const match = url.match(/^git@([^:]+):(.+)$/);
+    if (match) {
+      return `https://${match[1]}/${match[2]}`;
+    }
+  }
+
+  // ssh://git@gitee.com/user/repo.git
+  if (url.startsWith('ssh://')) {
+    return url.replace('ssh://git@', 'https://');
+  }
+
+  return url;
+}
+
+/**
  * 简单的路径处理函数（替代 Node.js path 模块）
  */
 function getRelativePath(basePath: string, fullPath: string): string {
@@ -30,6 +60,7 @@ export class IsomorphicGitService implements GitService {
   private dir: string;
   private fs: FileSystemAdapter;
   private token: string | null = null;
+  private sshKey: string | null = null;
 
   constructor(private app: App) {
     this.dir = this.getVaultPath();
@@ -156,9 +187,20 @@ export class IsomorphicGitService implements GitService {
     this.token = token;
   }
 
+  /**
+   * 设置 SSH 私钥
+   */
+  setSSHKey(privateKey: string): void {
+    this.sshKey = privateKey;
+  }
+
   private getAuth(): { username: string; password: string } | undefined {
     if (this.token) {
       return { username: 'oauth2', password: this.token };
+    }
+    if (this.sshKey) {
+      // SSH 认证 - 返回 undefined，使用默认行为
+      return undefined;
     }
     return undefined;
   }
@@ -201,11 +243,17 @@ export class IsomorphicGitService implements GitService {
   }
 
   async setRemoteUrl(url: string): Promise<void> {
+    // isomorphic-git 不支持 SSH URL，自动转换为 HTTPS
+    const effectiveUrl = sshToHttps(url);
+    if (effectiveUrl !== url) {
+      logger.info(`Converted SSH URL to HTTPS: ${effectiveUrl}`);
+    }
+
     await git.addRemote({
       fs: this.fs,
       dir: this.dir,
       remote: 'origin',
-      url,
+      url: effectiveUrl,
       force: true,
     });
   }

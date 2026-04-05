@@ -1,5 +1,7 @@
-import { Plugin, Notice, TFile } from 'obsidian';
+import { Plugin, Notice, TFile, Platform } from 'obsidian';
 import { GitSyncSettings, DEFAULT_SETTINGS } from './types';
+import { GitService } from './git/git-service';
+import { NativeGitService } from './git/native-git';
 import { IsomorphicGitService } from './git/isomorphic-git';
 import { TokenAuthProvider } from './auth/token-provider';
 import { SyncManager } from './sync/sync-manager';
@@ -11,7 +13,7 @@ import { logger } from './utils/logger';
 
 export default class GitSyncPlugin extends Plugin {
   settings: GitSyncSettings;
-  gitService: IsomorphicGitService;
+  gitService: GitService;
   authProvider: TokenAuthProvider;
   syncManager: SyncManager;
   statusBar: StatusBar;
@@ -22,8 +24,16 @@ export default class GitSyncPlugin extends Plugin {
     try {
       await this.loadSettings();
 
-      // 初始化服务
-      this.gitService = new IsomorphicGitService(this.app);
+      // 初始化 Git 服务
+      // 桌面端优先使用原生 Git（支持 SSH），移动端使用 isomorphic-git
+      if (Platform.isDesktopApp) {
+        logger.info('Desktop environment detected, using native Git');
+        this.gitService = new NativeGitService(this.app);
+      } else {
+        logger.info('Mobile environment detected, using isomorphic-git');
+        this.gitService = new IsomorphicGitService(this.app);
+      }
+
       this.authProvider = new TokenAuthProvider(this.settings.token);
       this.syncManager = new SyncManager(this.app, this.gitService, this.settings);
 
@@ -113,18 +123,23 @@ export default class GitSyncPlugin extends Plugin {
   }
 
   private async handleSync() {
+    // 检查仓库地址
     if (!this.settings.remoteUrl) {
       new Notice('请先配置远程仓库地址');
       return;
     }
 
-    if (!this.settings.token) {
-      new Notice('请先配置访问令牌');
-      return;
+    // 桌面端使用原生 Git，SSH 认证由系统 Git 处理
+    // 移动端使用 isomorphic-git，需要 Token
+    if (!Platform.isDesktopApp) {
+      // 移动端：需要 Token
+      if (!this.settings.token) {
+        new Notice('移动端需要配置访问令牌');
+        return;
+      }
+      this.gitService.setToken?.(this.settings.token);
     }
-
-    // 设置认证
-    this.gitService.setToken(this.settings.token);
+    // 桌面端 SSH：系统 Git 直接使用 SSH 密钥，无需额外配置
 
     // 检查仓库
     if (!await this.gitService.isRepoInitialized()) {
