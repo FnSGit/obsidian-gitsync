@@ -1,10 +1,26 @@
 import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/web';
-import * as path from 'path';
 import { App, TFile, TFolder, normalizePath } from 'obsidian';
 import { GitService } from './git-service';
 import { FileChange, FileStatus } from '../types';
 import { logger } from '../utils/logger';
+
+/**
+ * 简单的路径处理函数（替代 Node.js path 模块）
+ */
+function getRelativePath(basePath: string, fullPath: string): string {
+  if (!basePath) return fullPath;
+  const normalizedBase = basePath.replace(/\\/g, '/');
+  const normalizedFull = fullPath.replace(/\\/g, '/');
+  if (normalizedFull.startsWith(normalizedBase)) {
+    let relative = normalizedFull.slice(normalizedBase.length);
+    if (relative.startsWith('/')) {
+      relative = relative.slice(1);
+    }
+    return relative;
+  }
+  return fullPath;
+}
 
 /**
  * Isomorphic Git 实现
@@ -32,7 +48,7 @@ export class IsomorphicGitService implements GitService {
     return {
       promises: {
         readFile: async (filePath: string) => {
-          const relativePath = path.relative(dir, filePath);
+          const relativePath = getRelativePath(dir, filePath);
           const normalized = normalizePath(relativePath);
           const file = app.vault.getAbstractFileByPath(normalized);
 
@@ -45,7 +61,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         writeFile: async (filePath: string, data: Buffer | string) => {
-          const relativePath = path.relative(dir, filePath);
+          const relativePath = getRelativePath(dir, filePath);
           const normalized = normalizePath(relativePath);
 
           const content = typeof data === 'string' ? data : data.toString('utf-8');
@@ -59,7 +75,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         mkdir: async (dirPath: string) => {
-          const relativePath = path.relative(dir, dirPath);
+          const relativePath = getRelativePath(dir, dirPath);
           const normalized = normalizePath(relativePath);
           const folder = app.vault.getAbstractFileByPath(normalized);
 
@@ -69,7 +85,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         readdir: async (dirPath: string) => {
-          const relativePath = path.relative(dir, dirPath);
+          const relativePath = getRelativePath(dir, dirPath);
           const normalized = normalizePath(relativePath || '/');
           const folder = app.vault.getAbstractFileByPath(normalized);
 
@@ -81,7 +97,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         stat: async (filePath: string) => {
-          const relativePath = path.relative(dir, filePath);
+          const relativePath = getRelativePath(dir, filePath);
           const normalized = normalizePath(relativePath);
           const file = app.vault.getAbstractFileByPath(normalized);
 
@@ -96,7 +112,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         lstat: async (filePath: string) => {
-          const relativePath = path.relative(dir, filePath);
+          const relativePath = getRelativePath(dir, filePath);
           const normalized = normalizePath(relativePath);
           const file = app.vault.getAbstractFileByPath(normalized);
 
@@ -111,7 +127,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         unlink: async (filePath: string) => {
-          const relativePath = path.relative(dir, filePath);
+          const relativePath = getRelativePath(dir, filePath);
           const normalized = normalizePath(relativePath);
           const file = app.vault.getAbstractFileByPath(normalized);
 
@@ -121,7 +137,7 @@ export class IsomorphicGitService implements GitService {
         },
 
         rmdir: async (dirPath: string) => {
-          const relativePath = path.relative(dir, dirPath);
+          const relativePath = getRelativePath(dir, dirPath);
           const normalized = normalizePath(relativePath);
           const folder = app.vault.getAbstractFileByPath(normalized);
 

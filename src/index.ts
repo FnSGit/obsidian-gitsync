@@ -19,74 +19,81 @@ export default class GitSyncPlugin extends Plugin {
   syncIntervalId: number | null = null;
 
   async onload() {
-    await this.loadSettings();
+    try {
+      await this.loadSettings();
 
-    // 初始化服务
-    this.gitService = new IsomorphicGitService(this.app);
-    this.authProvider = new TokenAuthProvider(this.settings.token);
-    this.syncManager = new SyncManager(this.app, this.gitService, this.settings);
+      // 初始化服务
+      this.gitService = new IsomorphicGitService(this.app);
+      this.authProvider = new TokenAuthProvider(this.settings.token);
+      this.syncManager = new SyncManager(this.app, this.gitService, this.settings);
 
-    await this.syncManager.init();
+      await this.syncManager.init();
 
-    // 添加状态栏
-    this.statusBar = new StatusBar(
-      this.app,
-      this.addStatusBarItem()
-    );
-
-    // 添加 Ribbon 图标
-    const ribbonEl = this.addRibbonIcon('git-branch', 'Git Sync', () => this.handleSync());
-    this.ribbonIcon = new RibbonIcon(
-      this.app,
-      ribbonEl,
-      () => this.handleSync(),
-      () => this.showConflicts()
-    );
-
-    // 注册命令
-    this.addCommand({
-      id: 'sync',
-      name: 'Sync with remote',
-      callback: async () => {
-        await this.handleSync();
-      },
-    });
-
-    this.addCommand({
-      id: 'show-conflicts',
-      name: 'Show pending conflicts',
-      callback: () => {
-        this.showConflicts();
-      },
-    });
-
-    // 添加设置面板
-    this.addSettingTab(new GitSyncSettingTab(this.app, this));
-
-    // 设置文件保存监听
-    if (this.settings.autoSync.onFileSave) {
-      this.registerEvent(
-        this.app.vault.on('modify', (file) => {
-          if (file instanceof TFile) {
-            this.scheduleAutoSync(5000); // 5秒后同步
-          }
-        })
+      // 添加状态栏
+      this.statusBar = new StatusBar(
+        this.app,
+        this.addStatusBarItem()
       );
-    }
 
-    // 启动时自动同步
-    if (this.settings.autoSync.onStartup) {
-      setTimeout(() => {
-        this.handleSync();
-      }, 5000);
-    }
+      // 添加 Ribbon 图标
+      const ribbonEl = this.addRibbonIcon('git-branch', 'Git Sync', () => this.handleSync());
+      this.ribbonIcon = new RibbonIcon(
+        this.app,
+        ribbonEl,
+        () => this.handleSync(),
+        () => this.showConflicts()
+      );
 
-    // 启动定时自动同步
-    if (this.settings.autoSync.enabled) {
-      this.startAutoSync();
-    }
+      // 注册命令
+      this.addCommand({
+        id: 'sync',
+        name: 'Sync with remote',
+        callback: async () => {
+          await this.handleSync();
+        },
+      });
 
-    logger.info('Git Sync plugin loaded');
+      this.addCommand({
+        id: 'show-conflicts',
+        name: 'Show pending conflicts',
+        callback: () => {
+          this.showConflicts();
+        },
+      });
+
+      // 添加设置面板
+      this.addSettingTab(new GitSyncSettingTab(this.app, this));
+
+      // 设置文件保存监听
+      if (this.settings.autoSync.onFileSave) {
+        this.registerEvent(
+          this.app.vault.on('modify', (file) => {
+            if (file instanceof TFile) {
+              this.scheduleAutoSync(5000); // 5秒后同步
+            }
+          })
+        );
+      }
+
+      // 启动时自动同步
+      if (this.settings.autoSync.onStartup) {
+        setTimeout(() => {
+          this.handleSync();
+        }, 5000);
+      }
+
+      // 启动定时自动同步
+      if (this.settings.autoSync.enabled) {
+        this.startAutoSync();
+      }
+
+      logger.info('Git Sync plugin loaded');
+      new Notice('Git Sync 插件已加载');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to load plugin:', error);
+      new Notice(`Git Sync 加载失败: ${message}`);
+    }
   }
 
   onunload() {
