@@ -186,12 +186,14 @@ npm test
 ### 打包发布
 
 ```bash
-# 构建
-npm run build
+# 方式一：使用打包脚本（推荐）
+npm run package
 
-# 打包
-cd release && zip -r obsidian-git-sync-$(node -p "require('../package.json').version").zip obsidian-git-sync/
+# 方式二：完整流程（构建 + 打包）
+npm run release
 ```
+
+打包完成后，在 `release/` 目录下会生成 `obsidian-git-sync-x.x.x.zip` 文件，可直接上传到 GitHub/Gitee Releases。
 
 ## 常见问题
 

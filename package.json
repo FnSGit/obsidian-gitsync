@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs --production",
+    "package": "node scripts/package.js",
+    "release": "npm run build && npm run package",
     "test": "jest",
     "test:watch": "jest --watch"
   },
