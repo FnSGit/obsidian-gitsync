@@ -59,6 +59,7 @@ export class SyncManager {
 
   /**
    * 执行同步
+   * 按设计文档流程：Pull → Push
    */
   async sync(onProgress?: SyncProgressCallback): Promise<SyncResult> {
     this.status = 'syncing';
@@ -79,7 +80,8 @@ export class SyncManager {
         };
       }
 
-      // Step 1: Pull
+      // Step 1: Pull (git fetch + merge)
+      // fetch + merge 允许本地有未暂存变更
       onProgress?.('syncing', '正在拉取远程更新...');
       const pullResult = await this.gitService.pull();
 
@@ -102,17 +104,17 @@ export class SyncManager {
         };
       }
 
-      // Step 2: 获取本地变更
+      // Step 2: Push (检查本地变更 → add → commit → push)
       onProgress?.('syncing', '检查本地变更...');
       const changes = await this.gitService.getStatus();
       const filteredChanges = this.filterChanges(changes);
 
-      // Step 3: Commit & Push
       let pushed = 0;
       if (filteredChanges.length > 0) {
-        onProgress?.('syncing', `提交 ${filteredChanges.length} 个文件...`);
-
+        onProgress?.('syncing', `暂存 ${filteredChanges.length} 个文件...`);
         await this.gitService.add();
+
+        onProgress?.('syncing', '提交本地变更...');
         await this.gitService.commit(`sync: ${new Date().toISOString()}`);
 
         onProgress?.('syncing', '推送到远程...');

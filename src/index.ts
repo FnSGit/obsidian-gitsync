@@ -1,7 +1,7 @@
 import { Plugin, Notice, TFile, Platform } from 'obsidian';
 import { GitSyncSettings, DEFAULT_SETTINGS } from './types';
 import { GitService } from './git/git-service';
-import { NativeGitService } from './git/native-git';
+import { NativeGitService, isNativeGitAvailable } from './git/native-git';
 import { IsomorphicGitService } from './git/isomorphic-git';
 import { TokenAuthProvider } from './auth/token-provider';
 import { SyncManager } from './sync/sync-manager';
@@ -19,90 +19,101 @@ export default class GitSyncPlugin extends Plugin {
   statusBar: StatusBar;
   ribbonIcon: RibbonIcon;
   syncIntervalId: number | null = null;
+  useNativeGit: boolean = false;
 
   async onload() {
-    try {
-      await this.loadSettings();
+    await this.loadSettings();
 
-      // 初始化 Git 服务
-      // 桌面端优先使用原生 Git（支持 SSH），移动端使用 isomorphic-git
-      if (Platform.isDesktopApp) {
-        logger.info('Desktop environment detected, using native Git');
-        this.gitService = new NativeGitService(this.app);
-      } else {
-        logger.info('Mobile environment detected, using isomorphic-git');
-        this.gitService = new IsomorphicGitService(this.app);
-      }
+    // 先创建 UI，确保用户能看到插件
+    // 添加状态栏
+    this.statusBar = new StatusBar(
+      this.app,
+      this.addStatusBarItem()
+    );
+    this.statusBar.setStatus('idle', '初始化中...');
 
-      this.authProvider = new TokenAuthProvider(this.settings.token);
-      this.syncManager = new SyncManager(this.app, this.gitService, this.settings);
+    // 添加 Ribbon 图标
+    const ribbonEl = this.addRibbonIcon('git-branch', 'Git Sync', () => this.handleSync());
+    this.ribbonIcon = new RibbonIcon(
+      this.app,
+      ribbonEl,
+      () => this.handleSync(),
+      () => this.showConflicts()
+    );
 
-      await this.syncManager.init();
+    // 注册命令
+    this.addCommand({
+      id: 'sync',
+      name: 'Sync with remote',
+      callback: async () => {
+        await this.handleSync();
+      },
+    });
 
-      // 添加状态栏
-      this.statusBar = new StatusBar(
-        this.app,
-        this.addStatusBarItem()
-      );
+    this.addCommand({
+      id: 'show-conflicts',
+      name: 'Show pending conflicts',
+      callback: () => {
+        this.showConflicts();
+      },
+    });
 
-      // 添加 Ribbon 图标
-      const ribbonEl = this.addRibbonIcon('git-branch', 'Git Sync', () => this.handleSync());
-      this.ribbonIcon = new RibbonIcon(
-        this.app,
-        ribbonEl,
-        () => this.handleSync(),
-        () => this.showConflicts()
-      );
+    // 添加设置面板
+    this.addSettingTab(new GitSyncSettingTab(this.app, this));
 
-      // 注册命令
-      this.addCommand({
-        id: 'sync',
-        name: 'Sync with remote',
-        callback: async () => {
-          await this.handleSync();
-        },
-      });
-
-      this.addCommand({
-        id: 'show-conflicts',
-        name: 'Show pending conflicts',
-        callback: () => {
-          this.showConflicts();
-        },
-      });
-
-      // 添加设置面板
-      this.addSettingTab(new GitSyncSettingTab(this.app, this));
-
-      // 设置文件保存监听
-      if (this.settings.autoSync.onFileSave) {
-        this.registerEvent(
-          this.app.vault.on('modify', (file) => {
-            if (file instanceof TFile) {
-              this.scheduleAutoSync(5000); // 5秒后同步
-            }
-          })
-        );
-      }
-
-      // 启动时自动同步
-      if (this.settings.autoSync.onStartup) {
-        setTimeout(() => {
-          this.handleSync();
-        }, 5000);
-      }
-
-      // 启动定时自动同步
-      if (this.settings.autoSync.enabled) {
-        this.startAutoSync();
-      }
-
-      logger.info('Git Sync plugin loaded');
-      new Notice('Git Sync 插件已加载');
-    } catch (error) {
+    // 异步初始化 Git 服务（不阻塞 UI）
+    this.initGitService().catch(error => {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error('Failed to load plugin:', error);
-      new Notice(`Git Sync 加载失败: ${message}`);
+      logger.error('Failed to initialize Git service:', error);
+      new Notice(`Git 服务初始化失败: ${message}`);
+      this.statusBar.setStatus('error', message);
+    });
+
+    logger.info('Git Sync plugin loaded');
+  }
+
+  private async initGitService() {
+    // 选择 Git 实现
+    // 桌面端：优先使用原生 Git（SSH 支持），没有则回退到 isomorphic-git
+    // 移动端：使用 isomorphic-git（需要 Token）
+    if (Platform.isDesktopApp && await isNativeGitAvailable()) {
+      logger.info('Native Git detected, using system Git with SSH support');
+      this.useNativeGit = true;
+      this.gitService = new NativeGitService(this.app);
+    } else {
+      logger.info('Using isomorphic-git (requires Token)');
+      this.useNativeGit = false;
+      this.gitService = new IsomorphicGitService(this.app);
+    }
+
+    this.authProvider = new TokenAuthProvider(this.settings.token);
+    this.syncManager = new SyncManager(this.app, this.gitService, this.settings);
+
+    await this.syncManager.init();
+
+    this.statusBar.setStatus('idle', '就绪');
+
+    // 设置文件保存监听
+    if (this.settings.autoSync.onFileSave) {
+      this.registerEvent(
+        this.app.vault.on('modify', (file) => {
+          if (file instanceof TFile) {
+            this.scheduleAutoSync(5000); // 5秒后同步
+          }
+        })
+      );
+    }
+
+    // 启动时自动同步
+    if (this.settings.autoSync.onStartup) {
+      setTimeout(() => {
+        this.handleSync();
+      }, 5000);
+    }
+
+    // 启动定时自动同步
+    if (this.settings.autoSync.enabled) {
+      this.startAutoSync();
     }
   }
 
@@ -129,17 +140,18 @@ export default class GitSyncPlugin extends Plugin {
       return;
     }
 
-    // 桌面端使用原生 Git，SSH 认证由系统 Git 处理
-    // 移动端使用 isomorphic-git，需要 Token
-    if (!Platform.isDesktopApp) {
-      // 移动端：需要 Token
+    // 原生 Git（桌面端有 Git）：SSH 认证由系统 Git 处理，无需 Token
+    // isomorphic-git（移动端或桌面端无 Git）：需要 Token
+    if (!this.useNativeGit) {
+      // 需要 Token 认证
       if (!this.settings.token) {
-        new Notice('移动端需要配置访问令牌');
+        const platform = Platform.isDesktopApp ? '桌面端未检测到 Git' : '移动端';
+        new Notice(`${platform}需要配置访问令牌`);
         return;
       }
       this.gitService.setToken?.(this.settings.token);
     }
-    // 桌面端 SSH：系统 Git 直接使用 SSH 密钥，无需额外配置
+    // 原生 Git SSH：系统 Git 直接使用 SSH 密钥，无需额外配置
 
     // 检查仓库
     if (!await this.gitService.isRepoInitialized()) {

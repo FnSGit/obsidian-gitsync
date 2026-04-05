@@ -48,7 +48,7 @@ export class StatusBar {
 
       case 'syncing':
         icon.setText('🔄');
-        icon.addClass('git-sync-icon syncing');
+        icon.addClasses(['git-sync-icon', 'syncing']);
         text.setText(`Git Sync: ${message || '同步中...'}`);
         this.element.addClass('syncing');
         break;
