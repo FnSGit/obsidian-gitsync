@@ -2,10 +2,11 @@
   "name": "obsidian-git-sync",
   "version": "1.0.0",
   "description": "Sync your Obsidian vault with Git repository",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs --production",
+    "deploy": "node scripts/dev-deploy.js",
     "package": "node scripts/package.js",
     "release": "npm run build && npm run package",
     "test": "jest",

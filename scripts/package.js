@@ -22,17 +22,20 @@ function log(color, message) {
 }
 
 function main() {
+  const rootDir = path.join(__dirname, '..');
+  const distDir = path.join(rootDir, 'dist');
+
   log('green', '=== Obsidian Git Sync 打包脚本 ===\n');
 
   // 读取 manifest.json
-  const manifestPath = path.join(__dirname, '..', 'manifest.json');
+  const manifestPath = path.join(rootDir, 'manifest.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   const { version, id } = manifest;
   const packageName = `${id}-${version}`;
 
   // 检查是否有未提交的更改
   try {
-    const status = execSync('git status --porcelain', { encoding: 'utf-8' });
+    const status = execSync('git status --porcelain', { encoding: 'utf-8', cwd: rootDir });
     if (status.trim()) {
       log('yellow', '警告: 存在未提交的更改');
       console.log(status);
@@ -44,24 +47,27 @@ function main() {
 
   // 清理旧的构建文件
   log('yellow', '清理旧的构建文件...');
-  const mainJsPath = path.join(__dirname, '..', 'main.js');
-  if (fs.existsSync(mainJsPath)) {
-    fs.unlinkSync(mainJsPath);
+  if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true });
   }
 
   // 执行构建
   log('yellow', '构建插件...');
-  execSync('npm run build', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+  execSync('npm run build', { stdio: 'inherit', cwd: rootDir });
 
   // 检查必需文件
   log('yellow', '检查必需文件...');
-  const requiredFiles = ['main.js', 'manifest.json', 'styles.css'];
+  const sourceFiles = [
+    { src: 'dist/main.js', dest: 'main.js' },
+    { src: 'manifest.json', dest: 'manifest.json' },
+    { src: 'styles.css', dest: 'styles.css' }
+  ];
   const missingFiles = [];
 
-  for (const file of requiredFiles) {
-    const filePath = path.join(__dirname, '..', file);
+  for (const file of sourceFiles) {
+    const filePath = path.join(rootDir, file.src);
     if (!fs.existsSync(filePath)) {
-      missingFiles.push(file);
+      missingFiles.push(file.src);
     }
   }
 
@@ -73,34 +79,32 @@ function main() {
 
   // 创建 release 目录
   log('yellow', '创建发布目录...');
-  const releaseDir = path.join(__dirname, '..', 'release');
+  const releaseDir = path.join(rootDir, 'release');
   if (fs.existsSync(releaseDir)) {
     fs.rmSync(releaseDir, { recursive: true });
   }
   fs.mkdirSync(releaseDir, { recursive: true });
 
   // 复制文件到 release 目录
-  for (const file of requiredFiles) {
-    const src = path.join(__dirname, '..', file);
-    const dest = path.join(releaseDir, file);
+  for (const file of sourceFiles) {
+    const src = path.join(rootDir, file.src);
+    const dest = path.join(releaseDir, file.dest);
     fs.copyFileSync(src, dest);
   }
 
   // 创建 zip 包
   log('yellow', '创建发布包...');
-  const zipFile = path.join(releaseDir, `${packageName}.zip`);
+  const destFiles = sourceFiles.map(f => f.dest);
 
-  // 使用系统 zip 命令或 archiver
   try {
-    execSync(`cd "${releaseDir}" && zip -r "${packageName}.zip" ${requiredFiles.join(' ')}`, { stdio: 'inherit' });
+    execSync(`cd "${releaseDir}" && zip -r "${packageName}.zip" ${destFiles.join(' ')}`, { stdio: 'inherit' });
   } catch (e) {
-    // zip 命令不可用，尝试使用 Node.js 的 archiver
     log('yellow', 'zip 命令不可用，请手动压缩文件');
     log('green', `\n=== 打包完成 ===`);
     console.log(`版本: ${version}`);
     console.log(`目录: release/`);
     console.log(`\n包含文件:`);
-    requiredFiles.forEach(f => console.log(`  - ${f}`));
+    destFiles.forEach(f => console.log(`  - ${f}`));
     return;
   }
 
@@ -111,7 +115,7 @@ function main() {
   console.log(`文件: release/${packageName}.zip`);
   console.log('');
   console.log('包含文件:');
-  requiredFiles.forEach(f => console.log(`  - ${f}`));
+  destFiles.forEach(f => console.log(`  - ${f}`));
   console.log('');
   log('yellow', '下一步:');
   console.log('  1. 在 GitHub/Gitee 创建新的 Release');

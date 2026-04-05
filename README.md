@@ -179,8 +179,28 @@ npm run dev
 # 生产构建
 npm run build
 
+# 部署到 Obsidian（构建 + 复制到插件目录）
+npm run deploy
+
+# 打包发布
+npm run package
+
+# 完整发布流程（构建 + 打包）
+npm run release
+
 # 运行测试
 npm test
+```
+
+### 目录结构
+
+```
+obsidian-git-sync/
+├── src/           # 源代码
+├── dist/          # 构建输出（.gitignore）
+├── release/       # 发布包（.gitignore）
+├── scripts/       # 构建和部署脚本
+└── ...
 ```
 
 ### 打包发布
